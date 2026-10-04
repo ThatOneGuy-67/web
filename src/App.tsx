@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
+import Account from "./pages/Account";
 import { startVisitorTracking } from "./lib/visitorTracker";
 import SiteBanGate from "./components/SiteBanGate";
 
@@ -34,6 +35,7 @@ const App = () => {
               <Route path="/" element={<Index />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/account" element={<Account />} />
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

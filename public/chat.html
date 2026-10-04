@@ -2090,7 +2090,7 @@ function enterChat(){
     isMod=true;
     role="mod";
   } else {
-    username=inputName;
+    username=inputName || new URLSearchParams(location.search).get("accountName") || "Guest";
     isAdmin=false;
     isMod=false;
     role="user";
@@ -2110,7 +2110,8 @@ function enterChat(){
       chatScreen.style.display="grid";
       onlineDB.child(username).set(true);
       onlineDB.child(username).onDisconnect().remove();
-      localStorage.setItem("savedUsername", username);
+    localStorage.setItem("savedUsername", username);
+    window.parent.postMessage({type:"chat-name-changed", name:username}, "*");
       saveChatNickname(username);
       localStorage.setItem("savedPassword", pass);
       ensureBaseRooms();
@@ -2898,7 +2899,8 @@ function loadColorOptions(){
 function sendGif(g){ getActiveChatRef().push({name:username,msg:g,admin:isAdmin,role:role,isImage:true,time:Date.now(),roomId:currentRoomId}); gifPicker.style.display="none"; }
 
 // Load saved username and password on page load
-const savedUsername = localStorage.getItem("savedUsername");
+const accountName = new URLSearchParams(location.search).get("accountName");
+const savedUsername = accountName || localStorage.getItem("savedUsername");
 const savedPassword = localStorage.getItem("savedPassword");
 if(savedUsername){
   usernameInput.value = savedUsername;

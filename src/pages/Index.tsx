@@ -32,7 +32,6 @@ import PollList from '@/components/PollList';
 import { THEMES, applyTheme } from '@/lib/themes';
 import PollList from '@/components/PollList';
 import AnnouncementList from '@/components/AnnouncementList';
-import { startVisitorTracking } from '@/lib/visitorTracker';
 
 interface Tab { id: string; history: string[]; index: number; title: string; reloadKey: number; }
 
@@ -53,9 +52,6 @@ const Index = () => {
   const activity   = useActivity();
   const closedTabs = useClosedTabs();
   const pinned     = usePinnedApps();
-
-  useEffect(() => startVisitorTracking(), []);
-
 
   const activeTab = tabs.find(t => t.id === activeTabId) || null;
   const currentUrl = activeTab ? activeTab.history[activeTab.index] : '';
@@ -272,6 +268,7 @@ const Index = () => {
                 onOpenPalette={() => setPaletteOpen(true)}
                 onChangeLayout={l => setSettings(s => ({ ...s, layoutStyle: l }))}
                 onCycleTheme={cycleThemePreview}
+                onOpenAccount={() => routerNavigate('/account')}
               />
             </div>
 

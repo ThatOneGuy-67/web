@@ -154,6 +154,7 @@ const Admin = () => {
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
   const [userSearch, setUserSearch] = useState("");
   const [chartMode, setChartMode] = useState<"bar" | "line" | "area">("line");
+  const [accountUsers, setAccountUsers] = useState<any[]>([]);
 
   const load = useCallback(async () => {
     try {
@@ -182,12 +183,13 @@ const Admin = () => {
       setStatsError("");
       setPollError("");
 
-      const [statsResult, announcementsResult, pollsResult, settingsResult, logsResult] = await Promise.all([
+      const [statsResult, announcementsResult, pollsResult, settingsResult, logsResult, usersResult] = await Promise.all([
         (supabase as any).rpc("get_admin_stats"),
         (supabase as any).from("announcements").select("*").order("created_at", { ascending: false }),
         (supabase as any).from("polls").select("*").order("created_at", { ascending: false }),
         (supabase as any).rpc("get_site_settings"),
         (supabase as any).rpc("get_admin_activity", { p_limit: 100 }),
+        (supabase as any).rpc("get_admin_users"),
       ]);
 
       try {
@@ -207,6 +209,7 @@ const Admin = () => {
       if (announcementsResult.data) setAnnouncements(announcementsResult.data);
       if (!settingsResult.error) setSiteSettings(Object.fromEntries(Object.entries(settingsResult.data ?? {}).map(([key, value]) => [key, value === true])));
       if (!logsResult.error) setActivityLogs(logsResult.data ?? []);
+      if (!usersResult.error) setAccountUsers(usersResult.data ?? []);
 
       if (pollsResult.error) {
         setPollError(errorMessage(pollsResult.error, "Unable to load polls."));
@@ -371,6 +374,7 @@ const Admin = () => {
   const nav = [
     ["overview", "Dashboard", BarChart3],
     ["users", "Users", Users],
+    ["accounts", "Accounts", Users],
     ["analytics", "Analytics", BarChart3],
     ["site", "Site Control", SlidersHorizontal],
     ["announcements", "Announcements", Megaphone],
@@ -576,6 +580,7 @@ const Admin = () => {
             <p className="text-white/50 text-sm">The admin URL is not a security boundary. Never put a service-role key in the browser.</p>
           </div>
         </>}
+        {tab === "accounts" && <section><h2 className="text-3xl font-bold">Accounts</h2><p className="mt-1 text-white/50">Registered accounts and their site names.</p><div className="mt-6 space-y-3">{accountUsers.map(user => <article key={user.id} className="rounded-xl border border-white/10 bg-white/5 p-4"><div className="flex flex-wrap items-baseline justify-between gap-2"><h3 className="font-semibold">{user.display_name || user.username}</h3><span className="text-xs text-white/40">{user.email}</span></div><p className="mt-2 text-sm text-white/60">Username: {user.username} · Chat name: {user.chat_name || user.display_name || user.username}</p><p className="mt-1 text-xs text-white/40">Joined {user.created_at ? new Date(user.created_at).toLocaleString() : "—"}</p></article>)}{!accountUsers.length && <p className="text-white/40">No account profiles found. Apply the profiles migration first.</p>}</div></section>}
       </main>
     </div>
   );

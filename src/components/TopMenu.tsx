@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   MoreVertical, Home, AppWindow, Bookmark, History, Download, Settings,
-  Command as CommandIcon, LayoutGrid, Monitor, Palette,
+  Command as CommandIcon, LayoutGrid, Monitor, Palette, UserRound,
 } from 'lucide-react';
 import type { SidebarView } from '@/lib/views';
 import { THEMES } from '@/lib/themes';
@@ -15,6 +15,7 @@ interface Props {
   onOpenPalette: () => void;
   onChangeLayout: (l: 'browser' | 'hub') => void;
   onCycleTheme: () => void;
+  onOpenAccount: () => void;
 }
 
 const navItems: { id: SidebarView; label: string; icon: typeof Home }[] = [
@@ -25,7 +26,7 @@ const navItems: { id: SidebarView; label: string; icon: typeof Home }[] = [
   { id: 'downloads', label: 'Downloads', icon: Download },
 ];
 
-const TopMenu = ({ active, layoutStyle, themeId, onSelect, onOpenSettings, onOpenPalette, onChangeLayout, onCycleTheme }: Props) => {
+const TopMenu = ({ active, layoutStyle, themeId, onSelect, onOpenSettings, onOpenPalette, onChangeLayout, onCycleTheme, onOpenAccount }: Props) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -104,6 +105,7 @@ const TopMenu = ({ active, layoutStyle, themeId, onSelect, onOpenSettings, onOpe
             <span className="flex-1 text-left">Cycle theme</span>
             <span className="text-[10px] font-mono text-muted-foreground">⌃⇧T</span>
           </button>
+          <button onClick={() => { onOpenAccount(); setOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-foreground/85 hover:bg-secondary/40"><UserRound className="w-4 h-4" /><span>Account</span></button>
           <div className="px-3 pb-2 text-[10px] text-muted-foreground truncate">Current: {currentTheme?.name}</div>
 
           <div className="my-1 h-px bg-border/60" />
