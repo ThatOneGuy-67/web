@@ -181,7 +181,7 @@ export function buildProxyUrl(target: string, s: AppSettings): string | null {
 
 export function buildSearchUrl(query: string, engine: AppSettings['searchEngine'], settings?: Pick<AppSettings, 'customSearchUrl'>): string {
   const q = encodeURIComponent(query);
-  if (engine === 'custom' && settings?.customSearchUrl) return settings.customSearchUrl.replaceAll('{q}', q);
+  if (engine === 'custom' && settings?.customSearchUrl) return settings.customSearchUrl.split('{q}').join(q);
   switch (engine) {
     case 'google': return `https://www.google.com/search?q=${q}`;
     case 'bing': return `https://www.bing.com/search?q=${q}`;

@@ -19,7 +19,7 @@ const App = () => {
     const stopTracking = startVisitorTracking();
 
     return () => {
-      stopTracking.then((stop) => stop());
+      stopTracking();
     };
   }, []);
 

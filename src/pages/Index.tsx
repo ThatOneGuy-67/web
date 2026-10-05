@@ -30,8 +30,6 @@ import { Wallpaper } from '@/components/Wallpaper';
 import AnnouncementList from '@/components/AnnouncementList';
 import PollList from '@/components/PollList';
 import { THEMES, applyTheme } from '@/lib/themes';
-import PollList from '@/components/PollList';
-import AnnouncementList from '@/components/AnnouncementList';
 
 interface Tab { id: string; history: string[]; index: number; title: string; reloadKey: number; }
 
