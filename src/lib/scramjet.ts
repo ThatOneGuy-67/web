@@ -15,9 +15,6 @@ export const RELAY_PRESETS: { name: string; url: string }[] = [
   { name: 'Mercury', url: 'wss://wisp.mercurywork.shop/' },
   { name: 'Anura', url: 'wss://anura.pro/' },
   { name: 'Terbium', url: 'wss://wisp.terbiumon.top/wisp/' },
-  { name: 'Nebula', url: 'wss://nebulaservices.org/wisp/' },
-  { name: 'Puter', url: 'wss://puter.cafe/wisp/' },
-  { name: 'Mercury (alt)', url: 'wss://alice.mercurywork.shop/' },
   { name: 'Daydream', url: 'wss://daydreamx.pro/wisp/' },
 ].filter((r, i, arr) => arr.findIndex(o => o.url === r.url) === i);
 
