@@ -1,4 +1,24 @@
-// sw v4 — config-race fix. Bump this comment to force browsers to pick up a new worker.
+// sw v5 — real error surfacing. Bump this comment to force browsers to pick up a new worker.
+// Capture internal Scramjet errors (it often logs then returns an empty 500).
+let lastScramjetError = '';
+function describeError(e) {
+  if (!e) return 'Unknown error';
+  const parts = [e.name && e.message ? `${e.name}: ${e.message}` : String(e)];
+  if (e.cause) parts.push('Cause: ' + (e.cause.message || String(e.cause)));
+  if (e.stack) parts.push(e.stack);
+  return parts.join('\n');
+}
+function decodeTarget(url) {
+  const i = url.pathname.indexOf('/scramjet/service/');
+  if (i < 0) return url.pathname;
+  try { return decodeURIComponent(url.pathname.slice(i + 18)); } catch { return url.pathname; }
+}
+const _origConsoleError = console.error.bind(console);
+console.error = (...args) => {
+  try { lastScramjetError = args.map(a => (a && a.stack) || (a && a.message) || String(a)).join(' ').slice(0, 2000); } catch {}
+  _origConsoleError(...args);
+};
+self.addEventListener('unhandledrejection', (ev) => { lastScramjetError = describeError(ev.reason); });
 importScripts('./scramjet/scramjet.all.js');
 
 const { ScramjetServiceWorker } = $scramjetLoadWorker();
@@ -71,13 +91,33 @@ async function handleRequest(event) {
   }
 
   if (isProxied || scramjet.route(event)) {
+    let res;
     try {
-      return await scramjet.fetch(event);
+      res = await scramjet.fetch(event);
     } catch (e) {
       // Never let respondWith() reject — that is what Chrome renders as
       // "might be temporarily down" (ERR_FAILED) with zero information.
-      return errorResponse('There was an error loading ' + url.pathname, String(e && e.stack || e));
+      console.error('[sw] scramjet.fetch threw', e);
+      return errorResponse('There was an error loading ' + decodeTarget(url), describeError(e));
     }
+    if (!res) return errorResponse('There was an error loading ' + decodeTarget(url), 'scramjet.fetch returned no response');
+    // Scramjet sometimes swallows the failure and returns a bare 5xx with an
+    // empty body. Replace it with the real details so it can be debugged.
+    if (res.status >= 500 && event.request.mode === 'navigate') {
+      let body = '';
+      try { body = await res.clone().text(); } catch {}
+      if (!body.trim() || res.status === 500 && !/<html/i.test(body)) {
+        const detail = [
+          `HTTP ${res.status} ${res.statusText || ''}`.trim(),
+          `Target: ${decodeTarget(url)}`,
+          body.trim() ? `Body: ${body.slice(0, 2000)}` : 'Body: (empty)',
+          'Headers: ' + [...res.headers].map(([k, v]) => `${k}: ${v}`).join('\n  '),
+          lastScramjetError ? `Last internal error: ${lastScramjetError}` : '',
+        ].filter(Boolean).join('\n');
+        return errorResponse('There was an error loading ' + decodeTarget(url), detail, res.status);
+      }
+    }
+    return res;
   }
 
   return safeFetch(event.request);

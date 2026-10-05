@@ -14,6 +14,11 @@ export const RELAY_PRESETS: { name: string; url: string }[] = [
   { name: 'Default relay', url: DEFAULT_WISP_URL },
   { name: 'Mercury', url: 'wss://wisp.mercurywork.shop/' },
   { name: 'Anura', url: 'wss://anura.pro/' },
+  { name: 'Terbium', url: 'wss://wisp.terbiumon.top/wisp/' },
+  { name: 'Nebula', url: 'wss://nebulaservices.org/wisp/' },
+  { name: 'Puter', url: 'wss://puter.cafe/wisp/' },
+  { name: 'Mercury (alt)', url: 'wss://alice.mercurywork.shop/' },
+  { name: 'Daydream', url: 'wss://daydreamx.pro/wisp/' },
 ].filter((r, i, arr) => arr.findIndex(o => o.url === r.url) === i);
 
 export function getWispUrl(): string {
@@ -185,15 +190,22 @@ export async function findWorkingRelay(
     if (s?.wispPoolEnabled && Array.isArray(s.wispPool)) configuredPool = s.wispPool.filter((u: unknown): u is string => typeof u === 'string' && /^wss?:\/\//i.test(u.trim())).map((u: string) => u.trim());
   } catch {}
   const candidates = [...new Set([preferred, ...configuredPool, ...RELAY_PRESETS.map(r => r.url)])];
-  const tried: string[] = [];
-  let lastMsg = 'No relay reachable';
-  for (const url of candidates) {
-    tried.push(url);
-    const r = await testWispReachable(url, { retries: url === preferred ? 2 : 1, timeoutMs: 4500, onEvent });
-    if (r.ok) return { ok: true, url, message: r.message, pingMs: r.pingMs, tried };
-    lastMsg = r.message;
+  // Probe every relay in parallel and keep the lowest-latency one. The
+  // preferred relay wins unless another is clearly faster (>80ms better),
+  // so we don't flip-flop between relays on every navigation.
+  const results = await Promise.all(candidates.map(url =>
+    testWispReachable(url, { retries: 1, timeoutMs: 3500, onEvent: url === preferred ? onEvent : undefined })
+      .then(r => ({ url, ...r }))
+      .catch((e: unknown) => ({ url, ok: false, message: String(e), pingMs: undefined as number | undefined }))
+  ));
+  const ok = results.filter(r => r.ok).sort((a, b) => (a.pingMs ?? 9999) - (b.pingMs ?? 9999));
+  if (ok.length) {
+    const pref = ok.find(r => r.url === preferred);
+    const best = pref && (pref.pingMs ?? 9999) - (ok[0].pingMs ?? 9999) <= 80 ? pref : ok[0];
+    return { ok: true, url: best.url, message: best.message, pingMs: best.pingMs, tried: candidates };
   }
-  return { ok: false, url: preferred, message: lastMsg, tried };
+  const last = results.find(r => r.url === preferred) ?? results[results.length - 1];
+  return { ok: false, url: preferred, message: last?.message || 'No relay reachable', tried: candidates };
 }
 
 
