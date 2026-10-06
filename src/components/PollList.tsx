@@ -18,11 +18,6 @@ type Poll = {
   results: PollOptionResult[];
 };
 
-type VoteRow = {
-  poll_id: string;
-  option_index: number;
-  voter_id: string;
-};
 
 function messageFor(error: unknown, fallback: string): string {
   if (typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string') {
