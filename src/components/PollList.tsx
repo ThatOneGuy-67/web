@@ -240,18 +240,12 @@ const PollList = () => {
       }
 
       try {
-        const voteRows = await loadVoteRows(polls.map(item => item.id));
-        const resultsByPoll = new Map<string, VoteRow[]>();
-        for (const vote of voteRows) {
-          const rows = resultsByPoll.get(vote.poll_id) ?? [];
-          rows.push(vote);
-          resultsByPoll.set(vote.poll_id, rows);
-        }
+        const { countsByPoll } = await loadPollResults(polls.map(item => item.id), voterId);
         setPolls(current => current.map(item => ({
           ...item,
           results: item.id === poll.id && returnedResults
             ? returnedResults
-            : getPollOptionResults(item.options, resultsByPoll.get(item.id) ?? []),
+            : resultsFromCounts(item.options, countsByPoll.get(item.id)),
         })));
         setResultsError('');
       } catch (error) {
