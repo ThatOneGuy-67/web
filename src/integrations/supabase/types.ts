@@ -199,6 +199,9 @@ export type Database = {
     }
     Functions: {
       get_admin_stats: { Args: never; Returns: Json }
+      get_poll_results:
+        | { Args: { p_poll_ids: string[] }; Returns: Json }
+        | { Args: { p_poll_ids: string[]; p_voter_id?: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -206,11 +209,24 @@ export type Database = {
         }
         Returns: boolean
       }
+      heartbeat_session: {
+        Args: { p_session_id: string; p_visitor_id: string }
+        Returns: undefined
+      }
       is_admin: { Args: never; Returns: boolean }
       submit_poll_vote: {
         Args: { p_option_index: number; p_poll_id: string; p_voter_id: string }
         Returns: Json
       }
+      track_session: {
+        Args: {
+          p_session_id: string
+          p_started_at?: string
+          p_visitor_id: string
+        }
+        Returns: undefined
+      }
+      track_visitor: { Args: { p_visitor_id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

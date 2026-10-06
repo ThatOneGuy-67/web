@@ -216,29 +216,13 @@ const playlistCatalog: CatalogPlaylist[] = [
         folder: "music/reagan/",
         cover: "assets/Reagan.jpg",
         privacy: "password",
-        password: "9472",
-        songs: [
-            { title: "Triple 3", artist: "E Bloodhound Lil Jeff, BloodHound Q50, Lil Scoom89", file: "Triple 3.mp3" },
-            { title: "60K", artist: "E Bloodhound Q50", file: "60K.mp3" },
-            { title: "Plan B", artist: "E TopOppGen", file: "Plan B.mp3" },
-            { title: "Crying On The Floor", artist: "E Lil king", file: "Crying On The Floor.mp3" },
-            { title: "OD Geeked", artist: "Lil Kooley", file: "OD Geeked.mp3" },
-            { title: "oregon", artist: "E TopOppGen", file: "oregon.mp3" },
-            { title: "Exotics", artist: "E Bloodhound Lil Jeff, Lil Scoom89", file: "Exotics.mp3" },
-            { title: "Lost My Gun", artist: "E Bloodhound Lil Jeff", file: "Lost My Gun.mp3" },
-            { title: "L.A.X.", artist: "E Bloodhound Lil Jeff", file: "L.A.X..mp3" },
-            { title: "Blow The Switch", artist: "E Bloodhound Lil Jeff", file: "Blow The Switch.mp3" },
-            { title: "Should of Saw It", artist: "E Bloodhound Lil Jeff", file: "Should of Saw It.mp3" },
-            { title: "Love Letters", artist: "E YFG FATSO", file: "Love Letters.mp3" },
-            { title: "Cuffed", artist: "E Juice WRLD", file: "Cuffed.mp3" },
-            { title: "Condone It", artist: "E Juice WRLD", file: "Condone It.mp3" },
-            { title: "Same Clothes", artist: "E Nazda", file: "Same Clothes.mp3" },
-        ]
+        songs: [] // served by the music-unlock function after server-side password check
+
     },
 ];
 const cdn = (path: string) => MUSIC_CDN + path.split('/').map(encodeURIComponent).join('/');
 
-export interface Playlist { id: string; name: string; description: string; cover: string; privacy: string; password?: string; songs: Song[]; }
+export interface Playlist { id: string; name: string; description: string; cover: string; privacy: string; songs: Song[]; }
 
 export const PLAYLISTS: Playlist[] = playlistCatalog.map((playlist) => ({
   id: playlist.id,
@@ -246,7 +230,6 @@ export const PLAYLISTS: Playlist[] = playlistCatalog.map((playlist) => ({
   description: playlist.description,
   cover: cdn(playlist.cover || 'assets/EX.jpg'),
   privacy: playlist.privacy || 'public',
-  password: playlist.password,
   songs: playlist.songs.map((track) => ({
     title: track.title,
     artist: track.artist,

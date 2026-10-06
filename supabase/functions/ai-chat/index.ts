@@ -1,4 +1,5 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { ASSISTANTS } from './assistants.ts';
 
 const GATEWAY = 'https://ai.gateway.lovable.dev/v1/chat/completions';
 const DEFAULT_MODEL = 'google/gemini-3.6-flash';
@@ -19,9 +20,7 @@ interface InMessage {
 
 interface Body {
   messages: InMessage[];
-  system?: string;
-  model?: string;
-  temperature?: number;
+  assistant?: string;
 }
 
 const MAX_MESSAGES = 40;
@@ -88,26 +87,50 @@ Deno.serve(async (req) => {
       });
     }
 
-    const body = (await req.json()) as Body;
-    if (!body || !Array.isArray(body.messages) || body.messages.length === 0) {
+    const raw = (await req.json().catch(() => null)) as Partial<Body> | null;
+    if (!raw || !Array.isArray(raw.messages) || raw.messages.length === 0) {
       return new Response(JSON.stringify({ error: 'messages[] is required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const history = body.messages.slice(-MAX_MESSAGES).map(toGatewayMessage);
+    // Instructions, model and temperature are server-owned; the caller only picks an assistant id.
+    const assistantId = typeof raw.assistant === 'string' && ASSISTANTS[raw.assistant] ? raw.assistant : 'general';
+    const spec = ASSISTANTS[assistantId];
+
+    // Only user/assistant roles are accepted from the caller; anything else is dropped.
+    const clean: InMessage[] = [];
+    for (const m of raw.messages.slice(-MAX_MESSAGES)) {
+      if (!m || typeof m !== 'object') continue;
+      const role = (m as InMessage).role;
+      const content = (m as InMessage).content;
+      if ((role !== 'user' && role !== 'assistant') || typeof content !== 'string') continue;
+      const atts = Array.isArray((m as InMessage).attachments)
+        ? (m as InMessage).attachments!.filter(
+            (a) => a && (a.kind === 'image' || a.kind === 'text') && typeof a.data === 'string' && typeof a.name === 'string',
+          ).slice(0, 10)
+        : [];
+      clean.push({ role, content: content.slice(0, 100000), attachments: role === 'user' ? atts : [] });
+    }
+    if (!clean.length) {
+      return new Response(JSON.stringify({ error: 'messages[] is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const messages = [
-      { role: 'system', content: body.system?.slice(0, 8000) || 'You are a helpful assistant.' },
-      ...history,
+      { role: 'system', content: spec.systemPrompt },
+      ...clean.map(toGatewayMessage),
     ];
 
     const res = await callGateway(
       {
-        model: body.model || DEFAULT_MODEL,
+        model: spec.model || DEFAULT_MODEL,
         messages,
         stream: true,
-        ...(typeof body.temperature === 'number' ? { temperature: body.temperature } : {}),
+        ...(typeof spec.temperature === 'number' ? { temperature: spec.temperature } : {}),
       },
       apiKey,
     );

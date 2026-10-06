@@ -182,9 +182,7 @@ export async function streamAssistantReply(
       apikey: SUPABASE_PUBLISHABLE_KEY,
     },
     body: JSON.stringify({
-      system: spec.systemPrompt,
-      temperature: spec.temperature,
-      ...(spec.model ? { model: spec.model } : {}),
+      assistant: spec.id,
       messages: history
         .filter((m) => !m.error)
         .map((m) => ({
