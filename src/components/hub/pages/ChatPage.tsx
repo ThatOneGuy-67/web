@@ -22,7 +22,7 @@ html:root{
   --sw-border:${hsl('border', 0.8)}; --sw-primary:${hsl('primary')}; --sw-primary-soft:${hsl('primary', 0.14)};
   --sw-muted:${hsl('muted-foreground')};
   --bg:transparent; --panel:${hsl('card', 0.55)}; --line:${hsl('border', 0.8)};
-  --text:${hsl('foreground')}; --muted:${hsl('muted-foreground')}; --accent:${hsl('primary')};
+  --text:${hsl('foreground')}; --muted:${hsl('muted-foreground')}; --accent:${hsl('primary')}; --line2:${hsl('border')};
   --glass-bg:${hsl('card', 0.55)}; --glass-border:${hsl('border', 0.8)}; --glass-soft:${hsl('muted', 0.5)};
   --glass-hover:${hsl('primary', 0.25)}; --green:${hsl('primary')};
 }
@@ -85,13 +85,16 @@ const ChatPage = () => {
   }, []);
 
   return (
-    <section aria-label="Chat" className="glass-panel relative h-[calc(100dvh-6rem)] min-h-[520px] w-full overflow-hidden p-0">
+    <section aria-label="TOG's Chat" className="relative flex h-[calc(100dvh-6rem)] min-h-[360px] w-full flex-col overflow-hidden">
+      <header className="shrink-0 border-b border-border py-4">
+        <h1 className="text-2xl font-semibold text-foreground">TOG's Chat</h1>
+      </header>
       <iframe
         ref={frameRef}
-        title="Chat"
+        title="TOG's Chat"
         src={chatUrl}
         onLoad={applyTheme}
-        className="block h-full w-full border-0 bg-transparent"
+        className="block min-h-0 w-full flex-1 border-0 bg-transparent"
         allow="clipboard-read; clipboard-write"
       />
     </section>

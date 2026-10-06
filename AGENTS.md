@@ -1,0 +1,1 @@
+The legacy community chat remains in its same-origin document to preserve its existing scripts; its host supplies live theme tokens and the document uses unframed, token-based surfaces to integrate with the site.
