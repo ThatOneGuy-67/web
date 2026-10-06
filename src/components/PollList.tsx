@@ -18,11 +18,6 @@ type Poll = {
   results: PollOptionResult[];
 };
 
-type VoteRow = {
-  poll_id: string;
-  option_index: number;
-  voter_id: string;
-};
 
 function messageFor(error: unknown, fallback: string): string {
   if (typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string') {
@@ -48,16 +43,53 @@ function readVotedPollIds(): string[] {
   return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [];
 }
 
-async function loadVoteRows(pollIds: string[]): Promise<VoteRow[]> {
-  if (!pollIds.length) return [];
+type PollResultsPayload = {
+  countsByPoll: Map<string, Map<number, number>>;
+  votedPollIds: string[];
+};
 
-  const { data, error } = await supabase
-    .from('poll_votes' as never)
-    .select('poll_id, option_index, voter_id')
-    .in('poll_id', pollIds);
+async function loadPollResults(pollIds: string[], voterId: string | null): Promise<PollResultsPayload> {
+  const empty: PollResultsPayload = { countsByPoll: new Map(), votedPollIds: [] };
+  if (!pollIds.length) return empty;
+
+  const { data, error } = await supabase.rpc('get_poll_results' as never, {
+    p_poll_ids: pollIds,
+    p_voter_id: voterId,
+  } as never);
 
   if (error) throw error;
-  return (data ?? []) as unknown as VoteRow[];
+
+  const payload = (data ?? {}) as { results?: unknown; voted?: unknown };
+  const countsByPoll = new Map<string, Map<number, number>>();
+  if (Array.isArray(payload.results)) {
+    for (const item of payload.results) {
+      if (typeof item !== 'object' || item === null) continue;
+      const record = item as Record<string, unknown>;
+      const pollId = typeof record.poll_id === 'string' ? record.poll_id : null;
+      const optionIndex = Number(record.option_index);
+      const votes = Number(record.votes);
+      if (!pollId || !Number.isInteger(optionIndex) || !Number.isFinite(votes)) continue;
+      const counts = countsByPoll.get(pollId) ?? new Map<number, number>();
+      counts.set(optionIndex, Math.max(0, Math.floor(votes)));
+      countsByPoll.set(pollId, counts);
+    }
+  }
+
+  const votedPollIds = Array.isArray(payload.voted)
+    ? payload.voted.filter((id): id is string => typeof id === 'string')
+    : [];
+
+  return { countsByPoll, votedPollIds };
+}
+
+function resultsFromCounts(options: unknown, counts: Map<number, number> | undefined): PollOptionResult[] {
+  const votes: { option_index: number }[] = [];
+  if (counts) {
+    for (const [optionIndex, count] of counts) {
+      for (let i = 0; i < count; i += 1) votes.push({ option_index: optionIndex });
+    }
+  }
+  return getPollOptionResults(options, votes);
 }
 
 function readDismissedPollIds(): string[] {
@@ -141,23 +173,16 @@ const PollList = () => {
 
         setPolls(loadedPolls.map(poll => ({ ...poll, results: getPollOptionResults(poll.options, []) })));
         try {
-          const voteRows = await loadVoteRows(loadedPolls.map(poll => poll.id));
+          const { countsByPoll, votedPollIds: serverVotedIds } = await loadPollResults(
+            loadedPolls.map(poll => poll.id),
+            currentVoterId,
+          );
           if (cancelled) return;
 
-          const resultsByPoll = new Map<string, VoteRow[]>();
-          for (const vote of voteRows) {
-            const rows = resultsByPoll.get(vote.poll_id) ?? [];
-            rows.push(vote);
-            resultsByPoll.set(vote.poll_id, rows);
-          }
           setPolls(loadedPolls.map(poll => ({
             ...poll,
-            results: getPollOptionResults(poll.options, resultsByPoll.get(poll.id) ?? []),
+            results: resultsFromCounts(poll.options, countsByPoll.get(poll.id)),
           })));
-
-          const serverVotedIds = currentVoterId
-            ? voteRows.filter(vote => vote.voter_id === currentVoterId).map(vote => vote.poll_id)
-            : [];
           const allVotedIds = [...new Set([...savedVotedPollIds, ...serverVotedIds])];
           setVotedPollIds(allVotedIds);
           if (allVotedIds.length > savedVotedPollIds.length) {
@@ -215,18 +240,12 @@ const PollList = () => {
       }
 
       try {
-        const voteRows = await loadVoteRows(polls.map(item => item.id));
-        const resultsByPoll = new Map<string, VoteRow[]>();
-        for (const vote of voteRows) {
-          const rows = resultsByPoll.get(vote.poll_id) ?? [];
-          rows.push(vote);
-          resultsByPoll.set(vote.poll_id, rows);
-        }
+        const { countsByPoll } = await loadPollResults(polls.map(item => item.id), voterId);
         setPolls(current => current.map(item => ({
           ...item,
           results: item.id === poll.id && returnedResults
             ? returnedResults
-            : getPollOptionResults(item.options, resultsByPoll.get(item.id) ?? []),
+            : resultsFromCounts(item.options, countsByPoll.get(item.id)),
         })));
         setResultsError('');
       } catch (error) {
