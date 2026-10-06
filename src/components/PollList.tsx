@@ -178,23 +178,16 @@ const PollList = () => {
 
         setPolls(loadedPolls.map(poll => ({ ...poll, results: getPollOptionResults(poll.options, []) })));
         try {
-          const voteRows = await loadVoteRows(loadedPolls.map(poll => poll.id));
+          const { countsByPoll, votedPollIds: serverVotedIds } = await loadPollResults(
+            loadedPolls.map(poll => poll.id),
+            currentVoterId,
+          );
           if (cancelled) return;
 
-          const resultsByPoll = new Map<string, VoteRow[]>();
-          for (const vote of voteRows) {
-            const rows = resultsByPoll.get(vote.poll_id) ?? [];
-            rows.push(vote);
-            resultsByPoll.set(vote.poll_id, rows);
-          }
           setPolls(loadedPolls.map(poll => ({
             ...poll,
-            results: getPollOptionResults(poll.options, resultsByPoll.get(poll.id) ?? []),
+            results: resultsFromCounts(poll.options, countsByPoll.get(poll.id)),
           })));
-
-          const serverVotedIds = currentVoterId
-            ? voteRows.filter(vote => vote.voter_id === currentVoterId).map(vote => vote.poll_id)
-            : [];
           const allVotedIds = [...new Set([...savedVotedPollIds, ...serverVotedIds])];
           setVotedPollIds(allVotedIds);
           if (allVotedIds.length > savedVotedPollIds.length) {
