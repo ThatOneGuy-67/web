@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+<title>TOG's Chat</title>
 <style>
 body {
   background:
@@ -1754,7 +1755,7 @@ input::placeholder{
 
 <!-- LOGIN -->
 <div id="login" class="glass">
-  <h1>Snoopy’s Chat</h1>
+  <h1>TOG's Chat</h1>
   <h3>Enter Username</h3>
 
   <div class="rules glass">
@@ -3032,6 +3033,35 @@ input:focus,.composerWrap #sendBar input[type=text]:focus{
 .adminAction:hover{background:rgba(85,232,135,.10)!important;border-color:rgba(85,232,135,.25)!important}
 ::-webkit-scrollbar-thumb{background:#30373f!important}
 ::-webkit-scrollbar-thumb:hover{background:#4a545e!important}
+</style>
+<style id="integrated-chat-layout">
+html,body{background:transparent!important;color:var(--text)!important}
+body{padding:0!important;text-align:left}
+.glass{background:var(--sw-panel)!important;border-color:var(--sw-border)!important;box-shadow:none!important}
+#chatScreen{width:100%!important;max-width:none!important;height:100%!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;backdrop-filter:none!important}
+.chatSidebar{width:auto!important;background:transparent!important;border-color:var(--sw-border)!important;overflow-y:auto}
+.chatMain,.chatTopBar,.composerWrap,#chat{background:transparent!important;border-color:var(--sw-border)!important;box-shadow:none!important;backdrop-filter:none!important}
+#chat{border:0!important;border-radius:0!important}
+#login{width:min(430px,100%)!important;max-width:100%!important;margin:0 auto!important;min-height:100%!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;backdrop-filter:none!important;padding:24px!important}
+#login h1{font-size:24px;letter-spacing:0}
+.rules,input,.composerWrap #sendBar input[type=text],#sendBar input[type=text],.backBtn,.newPrivateBtn,.adminAction{background:var(--sw-panel)!important;color:var(--text)!important;border-color:var(--sw-border)!important}
+.roomHeadingTitle #currentRoomLabel,.sideBrandTitle,.chatTitle,.adminTitle{color:var(--text)!important}
+.roomHeadingSub,.sideSectionHead,.sideBrandSub,.statusText,.rules{color:var(--sw-muted)!important}
+.roomLiveDot,.statusDot{background:var(--sw-primary)!important;box-shadow:none!important}
+.roomCard{color:var(--sw-muted)!important}
+.roomCard:hover,.roomCard.active,.newPrivateBtn:hover,.backBtn:hover,.adminAction:hover{background:var(--sw-primary-soft)!important;color:var(--sw-primary)!important;border-color:var(--sw-border)!important;box-shadow:none!important}
+.roomCard.active::before{color:var(--sw-primary)!important}
+#online{color:var(--sw-primary)!important;background:var(--sw-primary-soft)!important;border-color:var(--sw-border)!important}
+.msg,.msg.mine{background:var(--sw-panel)!important;color:var(--text)!important;border-color:var(--sw-border)!important;box-shadow:none!important}
+.msg.mine,.msg:hover,.msg.mine:hover{background:var(--sw-primary-soft)!important}
+.msg.mine b{color:var(--sw-primary)!important}
+.composerWrap #gifBtn,.composerWrap #colorBtn{background:var(--sw-panel)!important;border-color:var(--sw-border)!important;color:var(--text)!important}
+.composerWrap .sendButton,#sendBar > button:last-of-type{background:var(--sw-primary-soft)!important;border-color:var(--sw-primary)!important;color:var(--text)!important}
+input:focus,.composerWrap #sendBar input[type=text]:focus{border-color:var(--sw-primary)!important;box-shadow:none!important}
+#gifPicker,#colorOptions{background:var(--sw-panel-strong)!important;color:var(--text)!important;border-color:var(--sw-border)!important}
+::-webkit-scrollbar-thumb{background:var(--sw-border)!important}
+::-webkit-scrollbar-thumb:hover{background:var(--sw-muted)!important}
+@media(max-width:800px){#chatScreen{grid-template-columns:1fr!important}.chatMain{min-width:0}.chatTopActions{flex-wrap:wrap;justify-content:flex-end}}
 </style>
 </body>
 </html>
