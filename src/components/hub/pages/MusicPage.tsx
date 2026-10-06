@@ -3,7 +3,8 @@ import {
   Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Volume2, VolumeX,
   Search, Music as MusicIcon, ListMusic, Heart, Home, Plus, ArrowRight, ArrowLeft,
 } from 'lucide-react';
-import { PLAYLISTS, ALL_SONGS, FALLBACK_COVER, formatTime, type Song, type Playlist } from '@/lib/music';
+import { PLAYLISTS, ALL_SONGS, FALLBACK_COVER, MUSIC_CDN, formatTime, type Song, type Playlist } from '@/lib/music';
+import { supabase } from '@/integrations/supabase/client';
 
 const LIKED_KEY = 'snoopy-music-liked';
 const CUSTOM_PLAYLISTS_KEY = 'snoopy-music-custom-playlists';
@@ -31,6 +32,7 @@ const MusicPage = () => {
   const [repeat, setRepeat] = useState(false);
   const [query, setQuery] = useState('');
   const [pendingProtectedPlaylist, setPendingProtectedPlaylist] = useState<Playlist | null>(null);
+  const [unlockedPlaylists, setUnlockedPlaylists] = useState<Record<string, Playlist>>({});
   const [passwordDraft, setPasswordDraft] = useState('');
   const [passwordError, setPasswordError] = useState(false);
   const [liked, setLiked] = useState<string[]>(() => {
@@ -109,17 +111,18 @@ const MusicPage = () => {
   };
 
   const isPlaylistLocked = (pl: Playlist | null | undefined) => Boolean(
-    pl && pl.privacy === 'password' && sessionStorage.getItem(`playlist-unlocked-${pl.id}`) !== 'true'
+    pl && pl.privacy === 'password' && !pl.songs.length
   );
 
   const openPlaylist = (pl: Playlist) => {
-    if (isPlaylistLocked(pl)) {
+    const resolved = pl.privacy === 'password' ? (unlockedPlaylists[pl.id] ?? pl) : pl;
+    if (isPlaylistLocked(resolved)) {
       setPendingProtectedPlaylist(pl);
       setPasswordDraft('');
       setPasswordError(false);
       return;
     }
-    setPlaylist(pl);
+    setPlaylist(resolved);
     setActiveCustomId(null);
     setIndex(0);
     setView('playlist');
@@ -132,14 +135,31 @@ const MusicPage = () => {
     setPasswordError(false);
   };
 
-  const unlockPlaylist = (event: React.FormEvent) => {
+  const unlockPlaylist = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!pendingProtectedPlaylist || passwordDraft !== pendingProtectedPlaylist.password) {
+    const pending = pendingProtectedPlaylist;
+    if (!pending) return;
+    const { data, error } = await supabase.functions.invoke('music-unlock', {
+      body: { playlistId: pending.id, password: passwordDraft },
+    });
+    const payload = data as { folder?: string; cover?: string; songs?: { title: string; artist: string; file: string }[] } | null;
+    if (error || !payload?.songs || !payload.folder) {
       setPasswordError(true);
       return;
     }
-    sessionStorage.setItem(`playlist-unlocked-${pendingProtectedPlaylist.id}`, 'true');
-    const unlocked = pendingProtectedPlaylist;
+    const cdn = (path: string) => MUSIC_CDN + path.split('/').map(encodeURIComponent).join('/');
+    const unlocked: Playlist = {
+      ...pending,
+      songs: payload.songs.map(track => ({
+        title: track.title,
+        artist: track.artist,
+        src: cdn(payload.folder + track.file),
+        cover: cdn(payload.cover || 'assets/EX.jpg'),
+        playlistId: pending.id,
+        privacy: 'password',
+      })),
+    };
+    setUnlockedPlaylists(current => ({ ...current, [pending.id]: unlocked }));
     closePasswordDialog();
     setPlaylist(unlocked);
     setActiveCustomId(null);
