@@ -33,38 +33,9 @@ function getSessionId(): string {
 }
 
 async function ensureVisitor(client: typeof trackingClient, visitorId: string) {
-  const now = new Date().toISOString();
-
-  const { data, error: selectError } = await client
-    .from("visitors")
-    .select("id, visit_count")
-    .eq("visitor_id", visitorId)
-    .maybeSingle();
-
-  if (selectError) throw selectError;
-
-  if (data) {
-    const { error } = await client
-      .from("visitors")
-      .update({
-        last_seen: now,
-        visit_count: (Number(data.visit_count) || 0) + 1,
-      })
-      .eq("visitor_id", visitorId);
-
-    if (error) throw error;
-    return;
-  }
-
-  const { error } = await client
-    .from("visitors")
-    .insert({
-      visitor_id: visitorId,
-      first_seen: now,
-      last_seen: now,
-      visit_count: 1,
-    });
-
+  const { error } = await (client as any).rpc("track_visitor", {
+    p_visitor_id: visitorId,
+  });
   if (error) throw error;
 }
 
@@ -73,31 +44,13 @@ async function ensureSession(
   visitorId: string,
   sessionId: string,
 ) {
-  const now = new Date().toISOString();
-  const startedAt = sessionStorage.getItem(STARTED_KEY) || now;
+  const startedAt = sessionStorage.getItem(STARTED_KEY) || new Date().toISOString();
 
-  const { data, error: selectError } = await client
-    .from("sessions")
-    .select("id")
-    .eq("session_id", sessionId)
-    .maybeSingle();
-
-  if (selectError) throw selectError;
-
-  if (data) {
-    await heartbeat(client, sessionId, visitorId);
-    return;
-  }
-
-  const { error } = await client
-    .from("sessions")
-    .insert({
-      session_id: sessionId,
-      visitor_id: visitorId,
-      started_at: startedAt,
-      last_heartbeat: now,
-    });
-
+  const { error } = await (client as any).rpc("track_session", {
+    p_session_id: sessionId,
+    p_visitor_id: visitorId,
+    p_started_at: startedAt,
+  });
   if (error) throw error;
 }
 
@@ -106,24 +59,11 @@ async function heartbeat(
   sessionId: string,
   visitorId: string,
 ) {
-  const now = new Date().toISOString();
-
-  const { error: sessionError } = await client
-    .from("sessions")
-    .update({
-      visitor_id: visitorId,
-      last_heartbeat: now,
-    })
-    .eq("session_id", sessionId);
-
-  if (sessionError) throw sessionError;
-
-  const { error: visitorError } = await client
-    .from("visitors")
-    .update({ last_seen: now })
-    .eq("visitor_id", visitorId);
-
-  if (visitorError) throw visitorError;
+  const { error } = await (client as any).rpc("heartbeat_session", {
+    p_session_id: sessionId,
+    p_visitor_id: visitorId,
+  });
+  if (error) throw error;
 }
 
 export function startVisitorTracking() {
